@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -11,10 +12,11 @@ import toast from "react-hot-toast";
 
 const AddAddress = () => {
 
-    const { getToken,router} = useAuth()
+    const router = useRouter();
+    const { getToken } = useAuth();
 
     const [address, setAddress] = useState({
-        fullName: '',
+        fullname: '',
         phoneNumber: '',
         pincode: '',
         area: '',
@@ -28,7 +30,7 @@ const AddAddress = () => {
 
             const token = await getToken()
 
-            const { data }= await axios.post ('/api/user/add-address',address,{headers:{Authorization: `Bearer ${token}`}}
+            const { data }= await axios.post('/api/user/add-address',{ address },{headers:{Authorization: `Bearer ${token}`}}
             )
 
             if (data.success){
@@ -57,8 +59,8 @@ const AddAddress = () => {
                             className="px-2 py-2.5 focus:border-orange-500 transition border border-gray-500/30 rounded outline-none w-full text-gray-500"
                             type="text"
                             placeholder="Full name"
-                            onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
-                            value={address.fullName}
+                            onChange={(e) => setAddress({ ...address, fullname: e.target.value })}
+                            value={address.fullname}
                         />
                         <input
                             className="px-2 py-2.5 focus:border-orange-500 transition border border-gray-500/30 rounded outline-none w-full text-gray-500"
