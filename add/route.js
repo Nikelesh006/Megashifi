@@ -1,11 +1,6 @@
-import { getAuth } from "@clerk/nextjs/server";
-import { v2 as cloudinary } from "cloudinary";
+import { getAuth } from "@clerk/nextjs/dist/types/server";
+import { v2 as cloudinary} from "cloudinary";
 import { NextResponse } from "next/server";
-import Product from "@/models/Product";
-import connectDB from "@/config/db";
-import authSeller from "@/lib/authSeller";
-
-export const runtime = "nodejs";
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -30,7 +25,7 @@ export async function POST(request){
         const description=formData.get("description");;
         const price=formData.get("price");
         const category=formData.get("category");
-        const offerPrice=formData.get("offerPrice");
+        const offerPrice=formData.grt("offerPrice");
 
         const files=formData.getAll("image");
 
@@ -41,14 +36,14 @@ export async function POST(request){
         const result=await Promise.all(
             files.map(async(file)=>{
                 const arrayBuffer=await file.arrayBuffer()
-                const buffer=Buffer.from(arrayBuffer)
+                const buffer=new Buffer.from(arrayBuffer)
 
                 return new Promise((resolve,reject)=>{
-                    const stream =cloudinary.uploader.upload_stream(
+                    const stream =cloudinary.uploader.upload_large_stream(
                         {resource_type :"auto"},
-                        (error,result)=>{
-                            if(error){
-                                reject(error)
+                        (err,result)=>{
+                            if(err){
+                                reject(err)
                             }
                             else{
                                resolve(result)
