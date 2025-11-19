@@ -15,70 +15,67 @@ cloudinary.config({
 
 export async function POST(request){
     try{
+        // ensure DB is connected before any model/auth checks
+        await connectDB();
 
-        const{userId}=getAuth(request)
-
-        const isSeller=await authSeller(userId)
-
-        if(!isSeller){
-            return NextResponse.json({success:false,message:"Unauthorized"})
+        const { userId } = getAuth(request);
+        if (!userId) {
+            return NextResponse.json({ success: false, message: "Unauthenticated" }, { status: 401 });
         }
 
-        const formData=await request.formData()
-
-        const name=formData.get("name");
-        const description=formData.get("description");;
-        const price=formData.get("price");
-        const category=formData.get("category");
-        const offerPrice=formData.get("offerPrice");
-
-        const files=formData.getAll("image");
-
-        if(!files ||files.length===0){
-
-            return NextResponse.json({success:false, message:'no files uploaded'})
+        const isSeller = await authSeller(userId);
+        if (!isSeller) {
+            return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
         }
-        const result=await Promise.all(
-            files.map(async(file)=>{
-                const arrayBuffer=await file.arrayBuffer()
-                const buffer=Buffer.from(arrayBuffer)
 
-                return new Promise((resolve,reject)=>{
-                    const stream =cloudinary.uploader.upload_stream(
-                        {resource_type :"auto"},
-                        (error,result)=>{
-                            if(error){
-                                reject(error)
-                            }
-                            else{
-                               resolve(result)
-                            }
+        const formData = await request.formData();
+
+        const name = formData.get("name");
+        const description = formData.get("description");
+        const price = formData.get("price");
+        const category = formData.get("category");
+        const offerPrice = formData.get("offerPrice");
+
+        const files = formData.getAll("image");
+
+        if (!files || files.length === 0) {
+            return NextResponse.json({ success: false, message: "No files uploaded" }, { status: 400 });
+        }
+
+        const result = await Promise.all(
+            files.map(async (file) => {
+                const arrayBuffer = await file.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+
+                return new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream(
+                        { resource_type: "auto" },
+                        (error, result) => {
+                            if (error) reject(error);
+                            else resolve(result);
                         }
-                    )
-
-                    stream.end(buffer)
-                })
+                    );
+                    stream.end(buffer);
+                });
             })
-        )
+        );
 
-        const image= result.map(result=>result.secure_url)
+        const image = result.map(r => r.secure_url);
 
-        await connectDB()
-        const newProduct= await Product.create({
+        const newProduct = await Product.create({
             userId,
             name,
             description,
-            price:Number(price),
+            price: Number(price) || 0,
             category,
-            offerPrice:Number(offerPrice),
+            offerPrice: Number(offerPrice) || 0,
             image,
-            date:Date.now()
-        })
+            date: Date.now()
+        });
 
-        return NextResponse.json({success:true,message:"Product added successfully"})
+        return NextResponse.json({ success: true, message: "Product added successfully", product: newProduct }, { status: 201 });
 
     }catch(error){
-
-           return NextResponse.json({success:false, message:error.message})
+        return NextResponse.json({ success: false, message: error?.message || "Server error" }, { status: 500 });
     }
 }
